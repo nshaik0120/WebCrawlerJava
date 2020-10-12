@@ -1,4 +1,8 @@
 # WebCrawlerJava
 WebCrawler using Jsoup library
 
-Using Yahoo Website to Fecthing the URLs using jsoup library.
+Searching a string in google API
+
+Please use the below url
+
+http://localhost:6001/search?query=java
