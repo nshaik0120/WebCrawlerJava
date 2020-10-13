@@ -17,72 +17,55 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class WebController {
-	
-	
-	
-	@RequestMapping("/search")
-	public void getData(@RequestParam(value = "query", defaultValue = "Java" ) String query){
+
+	@GetMapping("search")
+	public String searchString(@RequestParam("keyword") String keyword) {
 		
-		Set<String> result=getDataFromGoogle(query);
-		for(String temp : result){
-			System.out.println(temp);
+               String pageContent = getPageLinks("http://espn.com");
+
+		if (pageContent.contains(keyword)) {
+
+			System.out.println("Search keyword Found");
 		}
-		
-		
+		return pageContent;
+
 	}
-	
-	  private static Pattern patternDomainName;
-	  private Matcher matcher;
-	  private static final String DOMAIN_NAME_PATTERN
-		= "([a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,6}";
-	  static {
-		patternDomainName = Pattern.compile(DOMAIN_NAME_PATTERN);
-	  }
-	  
-	  
-	  public String getDomainName(String url){
 
-			String domainName = "";
-			matcher = patternDomainName.matcher(url);
-			if (matcher.find()) {
-				domainName = matcher.group(0).toLowerCase().trim();
-			}
-			return domainName;
+	public String getPageLinks(String URL) {
 
-		  }
+		StringBuilder pageContent = new StringBuilder();
+		try {
 
-	  private Set<String> getDataFromGoogle(String query) {
+			int count = 0;
+			Document document = Jsoup.connect(URL).get();
+			Elements linksOnPage = document.select("link[href]");
 
-			Set<String> result = new HashSet<String>();
-			String request = "https://www.google.com/search?q=" + query + "&num=5";
-			System.out.println("Sending request..." + request);
+			for (Element page : linksOnPage) {
 
-			try {
+				// Limiting no of sub links traverse to 5
+				if (count < 5) {
 
-				// need http protocol, set this as a Google bot agent :)
-				Document doc = Jsoup
-					.connect(request)
-					.userAgent(
-					  "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)")
-					.timeout(5000).get();
+					String subURL = page.attr("href");
 
-				// get all links
-				Elements links = doc.select("a[href]");
-				for (Element link : links) {
+					Document subDocument = Jsoup.connect(subURL).get();
 
-					String temp = link.attr("href");
-					if(temp.startsWith("/url?q=")){
-		                                //use regex to get domain name
-						result.add(getDomainName(temp));
-					}
+					String content = subDocument.body().text();
 
+					pageContent.append(content);
+
+					count++;
 				}
 
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
 
-			return result;
-		  }
+		} catch (IllegalArgumentException e) {
+
+		} catch (IOException e) {
+			System.err.println("For '" + URL + "': " + e.getMessage());
+		}
+
+		return pageContent.toString();
+	}
+
 
 }
