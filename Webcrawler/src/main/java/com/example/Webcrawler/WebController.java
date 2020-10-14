@@ -1,17 +1,13 @@
-package com.crawler.WebCrawlerApp;
+package com.example.Webcrawler;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-
+import java.util.ArrayList;
+import java.util.List;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,8 +16,10 @@ public class WebController {
 
 	@GetMapping("search")
 	public String searchString(@RequestParam("keyword") String keyword) {
-		
-               String pageContent = getPageLinks("http://espn.com");
+
+		List<String> urlList = getPageLinks("http://espn.com");
+
+		String pageContent = getPageContent(urlList);
 
 		if (pageContent.contains(keyword)) {
 
@@ -31,9 +29,9 @@ public class WebController {
 
 	}
 
-	public String getPageLinks(String URL) {
+	public List<String> getPageLinks(String URL) {
 
-		StringBuilder pageContent = new StringBuilder();
+		List<String> urlList = new ArrayList<String>();
 		try {
 
 			int count = 0;
@@ -42,16 +40,14 @@ public class WebController {
 
 			for (Element page : linksOnPage) {
 
-				// Limiting no of sub links traverse to 5
+				// Limiting no of sub links to 5
 				if (count < 5) {
 
 					String subURL = page.attr("href");
 
-					Document subDocument = Jsoup.connect(subURL).get();
+					urlList = new ArrayList<String>();
 
-					String content = subDocument.body().text();
-
-					pageContent.append(content);
+					urlList.add(subURL);
 
 					count++;
 				}
@@ -64,8 +60,36 @@ public class WebController {
 			System.err.println("For '" + URL + "': " + e.getMessage());
 		}
 
-		return pageContent.toString();
+		return urlList;
 	}
 
+	public String getPageContent(List<String> urls) {
+
+		StringBuilder pageContent = new StringBuilder();
+
+		for (String url : urls) {
+			Document subDocument = null;
+			try {
+				subDocument = Jsoup.connect(url).get();
+				String content = subDocument.body().text();
+
+				pageContent.append(content);
+
+			} catch (IllegalArgumentException e) {
+
+			}
+
+			catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			String content = subDocument.body().text();
+
+			pageContent.append(content);
+
+		}
+		return pageContent.toString();
+	}
 
 }
